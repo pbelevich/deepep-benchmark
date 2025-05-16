@@ -72,6 +72,7 @@ srun --mpi=pmix --cpu-bind=none --container-image ./deepep.sqsh python /deepep/t
 ```
 
 ## P5en results
+DeepEP commit [bb393e7760f94eb93878f4d62d967a58bd2d777d](https://github.com/deepseek-ai/DeepEP/tree/bb393e7760f94eb93878f4d62d967a58bd2d777d)
 ```
 [config] num_tokens=4096, hidden=7168, num_topk=8
 [layout] Kernel performance: 0.050 ms
