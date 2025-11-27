@@ -6,10 +6,9 @@ FROM nvidia/cuda:${CUDA_VERSION}-devel-ubuntu22.04
 ################################ NCCL ########################################
 
 ARG GDRCOPY_VERSION=v2.5.1
-ARG EFA_INSTALLER_VERSION=1.43.2
-ARG AWS_OFI_NCCL_VERSION=v1.16.3
-ARG NCCL_VERSION=v2.27.7-1
-ARG NCCL_TESTS_VERSION=v2.16.9
+ARG EFA_INSTALLER_VERSION=1.45.0
+ARG NCCL_VERSION=v2.28.9-1
+ARG NCCL_TESTS_VERSION=v2.17.6
 
 RUN apt-get update -y && apt-get upgrade -y
 RUN apt-get remove -y --allow-change-held-packages \
@@ -138,7 +137,7 @@ RUN cd /nvshmem_src \
     -DCMAKE_INSTALL_PREFIX=/opt/nvshmem \
     \
     -DCUDA_HOME=/usr/local/cuda \
-    -DCMAKE_CUDA_ARCHITECTURES="90a;100" \
+    -DCMAKE_CUDA_ARCHITECTURES="90a;100a" \
     \
     -DNVSHMEM_USE_GDRCOPY=1 \
     -DGDRCOPY_HOME=/opt/gdrcopy \
@@ -170,9 +169,10 @@ RUN cd /nvshmem_src \
     && make -j$(nproc) \
     && make install
 
-ENV PATH=/opt/nvshmem/bin:$PATH
-ENV LD_LIBRARY_PATH=/opt/nvshmem/lib:$LD_LIBRARY_PATH
-# ENV PATH=/opt/nvshmem/bin:$PATH LD_LIBRARY_PATH=/opt/amazon/pmix/lib:/opt/nvshmem/lib:$LD_LIBRARY_PATH NVSHMEM_REMOTE_TRANSPORT=libfabric NVSHMEM_LIBFABRIC_PROVIDER=efa
+ENV PATH=/opt/nvshmem/bin:$PATH LD_LIBRARY_PATH=/opt/amazon/pmix/lib:/opt/nvshmem/lib:$LD_LIBRARY_PATH NVSHMEM_REMOTE_TRANSPORT=libfabric NVSHMEM_LIBFABRIC_PROVIDER=efa
+
+## Set LD_PRELOAD for NVSHMEM library
+ENV LD_PRELOAD=/opt/nvshmem/lib/libnvshmem_host.so:$LD_PRELOAD
 
 ################################ PyTorch ########################################
 
@@ -181,11 +181,10 @@ RUN pip install ninja numpy cmake pytest
 
 ################################ DeepEP ########################################
 
+ARG DEEPEP_REPO=https://github.com/deepseek-ai/DeepEP.git
 ARG DEEPEP_COMMIT=e02e4d2e1fbfdf09e02e870b6acc5831cbd11e39
 
-RUN git clone https://github.com/deepseek-ai/DeepEP.git /DeepEP \
+RUN git clone ${DEEPEP_REPO} /DeepEP \
     && cd /DeepEP \
     && git checkout ${DEEPEP_COMMIT} \
-    && TORCH_CUDA_ARCH_LIST="9.0a+PTX;10.0" pip install .
-
-RUN mkdir -p /tmp/coredump
+    && TORCH_CUDA_ARCH_LIST="9.0a+PTX;10.0a+PTX" python3 setup.py install
